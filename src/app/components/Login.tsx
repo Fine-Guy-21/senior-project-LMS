@@ -1,6 +1,7 @@
 "use client";
 import { auth, githubProvider } from "../firebase/firebase";
-import { GithubAuthProvider, signInWithPopup } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { GithubAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -17,6 +18,7 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
@@ -35,53 +37,67 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     { email: 'admin@university.edu', password: 'admin123', name: 'Admin User', role: 'admin' as UserRole }
   ];
 
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate Firebase authentication
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        loginData.email,
+        loginData.password
+      );
 
-    const user = mockUsers.find(u =>
-      u.email === loginData.email && u.password === loginData.password
-    );
+      const user = userCredential.user;
 
-    if (user) {
-      const userData: User = {
-        id: Math.random().toString(36).substring(7),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face`
-      };
+      toast.success("Login successful!");
+      onLogin({
+        id: user.uid,
+        name: user.displayName || "User",
+        email: user.email!,
+        role: "student",
+        avatar: user.photoURL || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face`,
+      });
 
-      toast.success('Login successful!');
-      onLogin(userData);
-    } else {
-      toast.error('Invalid email or password');
+      router.push("./dashboard");
+
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
+
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate Firebase user creation
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        signupData.email,
+        signupData.password
+      );
 
-    const userData: User = {
-      id: Math.random().toString(36).substring(7),
-      name: signupData.name,
-      email: signupData.email,
-      role: signupData.role,
-      avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face`
-    };
+      const user = userCredential.user;
 
-    toast.success('Account created successfully!');
-    onLogin(userData);
-    setLoading(false);
+      // You can now also save extra info like role, name etc. in Firestore if needed
+
+      toast.success("Account created successfully!");
+      onLogin({
+        id: user.uid,
+        name: signupData.name,
+        email: user.email!,
+        role: signupData.role,
+        avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face`,
+      });
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
   //GitHub login handler
   const handleGithubLogin = async () => {
