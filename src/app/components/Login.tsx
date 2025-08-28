@@ -1,5 +1,6 @@
 "use client";
-
+import { auth, githubProvider } from "../firebase/firebase";
+import { GithubAuthProvider, signInWithPopup } from "firebase/auth";
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -82,9 +83,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     onLogin(userData);
     setLoading(false);
   };
+  //GitHub login handler
+  const handleGithubLogin = async () => {
+    try {
+      setLoading(true);
+      const result = await signInWithPopup(auth, githubProvider);
 
+      const user = result.user;
+      const userData: User = {
+        id: user.uid,
+        name: user.displayName || "GitHub User",
+        email: user.email || "",
+        role: "student", // default role
+        avatar: user.photoURL || "",
+      };
+
+      toast.success("GitHub login successful!");
+      onLogin(userData);
+    } catch (err) {
+      console.error(err);
+      toast.error("GitHub login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleGoogleLogin = async () => {
     setLoading(true);
+
 
     // Simulate Google OAuth
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -163,7 +188,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   </svg>
                   {loading ? 'Signing in...' : 'Continue with Google'}
                 </Button>
-
+                {/* GitHub Sign In Button */}
+                <Button
+                  onClick={handleGithubLogin}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:text-white"
+                >
+                  {/* GitHub Icon */}
+                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.39 7.86 10.93.58.11.79-.25.79-.56 
+        0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 
+        1.16.08 1.78 1.19 1.78 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.72-1.55-2.55-.29-5.23-1.28-5.23-5.71 
+        0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.89-.39c.98 0 1.97.13 
+        2.89.39 2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.81 1.19 1.84 1.19 3.1 
+        0 4.44-2.69 5.41-5.25 5.7.42.36.77 1.07.77 2.16 0 1.56-.01 2.81-.01 3.19 
+        0 .31.21.68.8.56A10.5 10.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
+                    />
+                  </svg>
+                  {loading ? 'Signing in...' : 'Continue with GitHub'}
+                </Button>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-white/20" />
